@@ -1,12 +1,27 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katalog Alat - Peminjam</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
 
-@section('title', 'Katalog Alat - Peminjam')
-@section('header-title', 'Katalog Alat')
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">Panel Peminjam</a>
+            <div class="d-flex">
+                <a href="{{ route('peminjam.riwayat') }}" class="btn btn-outline-light btn-sm me-2">Riwayat Pinjam</a>
+                <form action="{{ route('logout') }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-light btn-sm text-primary">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
 
-@section('content')
-<div class="space-y-6">
-
-   <div class="container">
+    <div class="container">
         @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
         @endif
@@ -61,5 +76,6 @@
             </div>
         </form>
     </div>
-</div>
-@endsection
+
+</body>
+</html>
