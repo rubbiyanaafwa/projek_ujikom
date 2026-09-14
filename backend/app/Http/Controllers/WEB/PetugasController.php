@@ -8,10 +8,11 @@ use App\Models\Pengembalian;
 use App\Models\Alat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Throwable;
 
 class PetugasController extends Controller
 {
-    // Menampilkan daftar pengajuan peminjaman dari siswa/peminjam
     public function indexPeminjaman(Request $request)
     {
         $search = $request->input('search');
@@ -19,7 +20,7 @@ class PetugasController extends Controller
         $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat'])
             ->where('status', 'diajukan')
             ->when($search, function ($query, $search) {
-                return $query->whereHas('user', function ($q) use ($search) {
+                $query->whereHas('user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
                 });
             })
@@ -29,44 +30,63 @@ class PetugasController extends Controller
         return view('petugas.peminjaman.index', compact('peminjamans', 'search'));
     }
 
-    // Menyetujui Peminjaman (Mengubah status & mengurangi stok alat)
     public function setujuiPeminjaman($id)
     {
         DB::beginTransaction();
-        try {
-            $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($id);
-            $peminjaman->update(['status' => 'dipinjam']);
 
-            // Kurangi stok alat secara otomatis
-            foreach ($peminjaman->detailPinjam as $detail) {
-                $alat = Alat::findOrFail($detail->alat_id);
-                $alat->stok -= $detail->jumlah;
-                $alat->save();
+        try {
+            $peminjaman = Peminjaman::with('detailPinjam')
+                ->lockForUpdate()
+                ->findOrFail($id);
+
+            if ($peminjaman->status !== 'diajukan') {
+                return redirect()->back()
+                    ->with('error', 'Peminjaman sudah diproses.');
             }
 
+            foreach ($peminjaman->detailPinjam as $detail) {
+                $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
+
+                if ($alat->stok < $detail->jumlah) {
+                    throw new \Exception(
+                        "Stok alat {$alat->nama_alat} tidak mencukupi."
+                    );
+                }
+
+                $alat->decrement('stok', $detail->jumlah);
+            }
+
+            $peminjaman->update(['status' => 'dipinjam']);
+
             DB::commit();
-            return redirect()->back()->with('success', 'Peminjaman disetujui dan stok alat dikurangi.');
-        } catch (Exception $e) {
-            DB::rollback();
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->with('success', 'Peminjaman berhasil disetujui.');
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    // Menolak Peminjaman (Menghapus pengajuan agar siswa bisa mengajukan ulang)
     public function tolakPeminjaman($id)
     {
         try {
             $peminjaman = Peminjaman::findOrFail($id);
 
-            // Pastikan statusnya memang masih diajukan
-            if ($peminjaman->status == 'diajukan') {
-                $peminjaman->delete();
-                return redirect()->back()->with('success', 'Pengajuan peminjaman berhasil ditolak.');
+            if ($peminjaman->status !== 'diajukan') {
+                return redirect()->back()
+                    ->with('error', 'Status peminjaman sudah berubah.');
             }
 
-            return redirect()->back()->with('error', 'Status peminjaman sudah berubah.');
-        } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            $peminjaman->delete();
+
+            return redirect()->back()
+                ->with('success', 'Pengajuan peminjaman berhasil ditolak.');
+        } catch (Throwable $e) {
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
@@ -74,10 +94,12 @@ class PetugasController extends Controller
     {
         $search = $request->input('search');
 
-        // Mengambil data pengembalian beserta relasi master-detailnya
-        $pengembalians = Pengembalian::with(['peminjaman.user', 'peminjaman.detailPinjam.alat'])
+        $pengembalians = Pengembalian::with([
+                'peminjaman.user',
+                'peminjaman.detailPinjam.alat',
+            ])
             ->when($search, function ($query, $search) {
-                return $query->whereHas('peminjaman.user', function ($q) use ($search) {
+                $query->whereHas('peminjaman.user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
                 });
             })
@@ -89,56 +111,109 @@ class PetugasController extends Controller
 
     public function prosesPengembalian(Request $request, $peminjamanId)
     {
-        $request->validate([
-            'kondisi_kembali' => 'required|string',
-            'denda' => 'nullable|integer',
+        $validated = $request->validate([
+            'kondisi_kembali' => ['required', 'string'],
+            'denda' => ['nullable', 'integer', 'min:0'],
         ]);
 
         DB::beginTransaction();
-        try {
-            $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($peminjamanId);
 
-            // Simpan data pengembalian
+        try {
+            $peminjaman = Peminjaman::with('detailPinjam')
+                ->lockForUpdate()
+                ->findOrFail($peminjamanId);
+
+            if ($peminjaman->status !== 'dipinjam') {
+                return redirect()->back()
+                    ->with('error', 'Peminjaman belum berstatus dipinjam.');
+            }
+
+            if (Pengembalian::where('peminjaman_id', $peminjaman->id)->exists()) {
+                return redirect()->back()
+                    ->with('error', 'Pengembalian sudah diproses.');
+            }
+
             Pengembalian::create([
                 'peminjaman_id' => $peminjaman->id,
                 'tgl_kembali' => now(),
-                'kondisi_kembali' => $request->kondisi_kembali,
-                'denda' => $request->denda ?? 0,
+                'kondisi_kembali' => $validated['kondisi_kembali'],
+                'denda' => $validated['denda'] ?? 0,
                 'petugas_id' => auth()->id(),
             ]);
 
-            // Update status peminjaman jadi selesai
-            $peminjaman->update(['status' => 'selesai']);
-
-            // Kembalikan stok alat ke inventaris
             foreach ($peminjaman->detailPinjam as $detail) {
-                $alat = Alat::findOrFail($detail->alat_id);
-                $alat->stok += $detail->jumlah;
-                $alat->save();
+                Alat::whereKey($detail->alat_id)
+                    ->increment('stok', $detail->jumlah);
             }
 
+            $peminjaman->update(['status' => 'selesai']);
+
             DB::commit();
-            return redirect()->back()->with('success', 'Pengembalian berhasil dicatat dan stok dipulihkan.');
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->with('success', 'Pengembalian berhasil dicatat.');
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    public function indexLaporan(Request $request)
+    private function filterLaporan(Request $request)
     {
-        $search = $request->input('search');
+        return Peminjaman::with([
+                'user',
+                'detailPinjam.alat',
+                'pengembalian.petugas',
+            ])
+            ->when(
+                $request->filled('start_date'),
+                fn ($query) => $query->whereDate('tgl_pinjam', '>=', $request->start_date)
+            )
+            ->when(
+                $request->filled('end_date'),
+                fn ($query) => $query->whereDate('tgl_pinjam', '<=', $request->end_date)
+            )
+            ->when(
+                $request->filled('status'),
+                fn ($query) => $query->where('status', $request->status)
+            )
+            ->latest();
+    }
 
-        // Mengambil seluruh data peminjaman (baik diajukan, dipinjam, maupun selesai) untuk kebutuhan laporan
-        $laporans = Peminjaman::with(['user', 'detailPinjam.alat'])
-            ->when($search, function ($query, $search) {
-                return $query->whereHas('user', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
-                })->orWhere('status', 'like', "%{$search}%");
-            })
-            ->latest()
-            ->get();
+    public function laporan(Request $request)
+    {
+        $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'status' => ['nullable', 'in:diajukan,dipinjam,selesai,telat'],
+        ]);
 
-        return view('petugas.laporan.index', compact('laporans', 'search'));
+        $peminjamans = $this->filterLaporan($request)->get();
+
+        $statistik = [
+            'total_pengajuan' => Peminjaman::count(),
+            'sedang_dipinjam' => Peminjaman::where('status', 'dipinjam')->count(),
+            'total_telat' => Peminjaman::where('status', 'telat')->count(),
+            'total_denda' => Pengembalian::sum('denda'),
+        ];
+
+        return view('petugas.cetakLaporan.index', compact(
+            'peminjamans',
+            'statistik'
+        ));
+    }
+
+    public function cetakPdf(Request $request)
+    {
+        $peminjamans = $this->filterLaporan($request)->get();
+
+        $pdf = Pdf::loadView('petugas.laporan.pdf', compact('peminjamans'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download(
+            'Laporan-Peminjaman-Alat-' . now()->format('Ymd') . '.pdf'
+        );
     }
 }

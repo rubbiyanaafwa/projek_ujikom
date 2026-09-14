@@ -63,7 +63,12 @@ Route::middleware(['auth', 'role:petugas,admin'])->prefix('petugas')->name('petu
     Route::post('/pengembalian/{id}', [PetugasController::class, 'prosesPengembalian'])->name('pengembalian.proses');
 
     // Tambahkan juga rute untuk cetak laporan jika nanti muncul error serupa
-    Route::get('/laporan', [PetugasController::class, 'indexLaporan'])->name('laporan.index');
+    Route::get('/laporan', [PetugasController::class, 'laporan'])
+        ->name('laporan.index');
+
+    Route::get('/laporan/pdf', [PetugasController::class, 'cetakPdf'])
+        ->name('laporan.pdf');
+
 });
 
 Route::middleware(['auth', 'role:peminjam'])->prefix('peminjam')->name('peminjam.')->group(function () {
@@ -75,7 +80,8 @@ Route::middleware(['auth', 'role:peminjam'])->prefix('peminjam')->name('peminjam
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'], 'login');
+    Route::post('/login', [AuthController::class, 'login'])
+        ->name('login');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
