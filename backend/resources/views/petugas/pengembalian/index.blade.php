@@ -81,7 +81,7 @@
                             
                             <!-- Kondisi Alat Saat Kembali -->
                             <td class="py-3 px-4 border-b">
-                                <span class="px-2 py-1 rounded text-xs font-semibold {{ strtolower($item->kondisi_kembali) === 'baik' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                                <span class="px-2 py-1 rounded text-xs font-semibold {{ strtolower($item->kondisi_kembali) === 'bagus' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
                                     {{ ucfirst($item->kondisi_kembali) }}
                                 </span>
                             </td>

@@ -146,7 +146,7 @@ class PetugasController extends Controller
                     ->increment('stok', $detail->jumlah);
             }
 
-            $peminjaman->update(['status' => 'selesai']);
+            $peminjaman->update(['status' => 'dikembalikan']);
 
             DB::commit();
 
@@ -187,7 +187,7 @@ class PetugasController extends Controller
         $request->validate([
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['nullable', 'in:diajukan,dipinjam,selesai,telat'],
+            'status' => ['nullable', 'in:diajukan,dipinjam,dikembalikan,telat'],
         ]);
 
         $peminjamans = $this->filterLaporan($request)->get();

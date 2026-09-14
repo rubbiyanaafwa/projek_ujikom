@@ -5,25 +5,6 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Statistik Riil Database -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Total Pengajuan</p>
-            <h4 class="text-2xl font-bold text-gray-800 mt-1">{{ $statistik['total_pengajuan'] }}</h4>
-        </div>
-        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Sedang Dipinjam</p>
-            <h4 class="text-2xl font-bold text-blue-600 mt-1">{{ $statistik['sedang_dipinjam'] }}</h4>
-        </div>
-        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Kasus Keterlambatan</p>
-            <h4 class="text-2xl font-bold text-red-600 mt-1">{{ $statistik['total_telat'] }}</h4>
-        </div>
-        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Denda Terkumpul</p>
-            <h4 class="text-2xl font-bold text-emerald-600 mt-1">Rp {{ number_format($statistik['total_denda'], 0, ',', '.') }}</h4>
-        </div>
-    </div>
 
     <!-- Form Filter -->
     <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -43,7 +24,7 @@
                     <option value="diajukan">Diajukan</option>
                     <option value="dipinjam">Dipinjam</option>
                     <option value="telat">Telat</option>
-                    <option value="selesai">Selesai</option>
+                    <option value="dikembalikan">Dikembalikan</option>
                 </select>
             </div>
             <div class="flex gap-2">
