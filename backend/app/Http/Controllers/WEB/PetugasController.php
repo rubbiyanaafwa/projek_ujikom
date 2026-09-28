@@ -207,9 +207,15 @@ class PetugasController extends Controller
 
     public function cetakPdf(Request $request)
     {
+        $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'status' => ['nullable', 'in:diajukan,dipinjam,dikembalikan,telat'],
+        ]);
+
         $peminjamans = $this->filterLaporan($request)->get();
 
-        $pdf = Pdf::loadView('petugas.laporan.pdf', compact('peminjamans'))
+        $pdf = Pdf::loadView('petugas.cetakLaporan.pdf', compact('peminjamans'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->download(
