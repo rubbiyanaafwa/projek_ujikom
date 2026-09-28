@@ -122,6 +122,11 @@ class AdminController extends Controller
     {
     $alat = Alat::findOrFail($id);
 
+    if ($alat->memilikiPeminjamanAktif()) {
+        return redirect()->route('admin.alat.index')
+            ->with('error', 'Alat tidak dapat dihapus karena masih terkait dengan peminjaman aktif.');
+    }
+
     // Hapus file gambar fisik jika ada
     if ($alat->gambar && file_exists(public_path($alat->gambar))) {
         unlink(public_path($alat->gambar));
@@ -215,6 +220,12 @@ class AdminController extends Controller
     public function destroyUser($id)
     {
         $user = User::findOrFail($id);
+
+        if ((string) auth()->id() === (string) $user->getKey()) {
+            return redirect()->route('admin.user.index')
+                ->with('error', 'Anda tidak dapat menghapus akun yang sedang digunakan.');
+        }
+
         $user->delete();
 
         return redirect()->route('admin.user.index')->with('success', 'User berhasil dihapus.');

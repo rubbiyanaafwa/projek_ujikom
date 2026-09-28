@@ -75,6 +75,12 @@ class UserController extends Controller
 
     public function destroy(User $user): JsonResponse
     {
+        if ((string) auth()->id() === (string) $user->getKey()) {
+            return response()->json([
+                'message' => 'Anda tidak dapat menghapus akun yang sedang digunakan.'
+            ], 403);
+        }
+
         DB::transaction(function () use ($user) {
             if ($user->foto_profile) {
                 Storage::disk('public')->delete($user->foto_profile);
