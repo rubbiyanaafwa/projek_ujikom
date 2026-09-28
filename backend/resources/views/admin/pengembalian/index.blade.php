@@ -18,19 +18,25 @@
 
 <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
     <div class="p-5 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
-        <h3 class="text-lg font-bold text-gray-800">Daftar Pengembalian</h3>
+        <h3 class="text-lg font-bold text-gray-800">{{ $isTrash ? 'Sampah Pengembalian' : 'Daftar Pengembalian' }}</h3>
         <div class="flex items-center gap-3 w-full md:w-auto">
             <form action="{{ route('admin.pengembalian.index') }}" method="GET" class="flex w-full md:w-80">
+                @if($isTrash)
+                    <input type="hidden" name="trash" value="1">
+                @endif
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama peminjam..." class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-r-lg transition">
                     Cari
                 </button>
                 @if(request('search'))
-                    <a href="{{ route('admin.pengembalian.index') }}" class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center transition">
+                    <a href="{{ route('admin.pengembalian.index', $isTrash ? ['trash' => 1] : []) }}" class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center transition">
                         Reset
                     </a>
                 @endif
             </form>
+            <a href="{{ route('admin.pengembalian.index', $isTrash ? [] : ['trash' => 1]) }}" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-lg transition whitespace-nowrap">
+                {{ $isTrash ? 'Kembali ke Daftar' : 'Sampah' }}
+            </a>
         </div>
     </div>
 
@@ -43,6 +49,9 @@
                     <th class="py-3 px-4">Tgl Kembali</th>
                     <th class="py-3 px-4">Kondisi Kembali</th>
                     <th class="py-3 px-4">Denda</th>
+                    @if($isTrash)
+                        <th class="py-3 px-4">Dihapus</th>
+                    @endif
                     <th class="py-3 px-4 text-center">Aksi</th>
                 </tr>
             </thead>
@@ -64,28 +73,38 @@
                         </span>
                     </td>
                     <td class="py-3 px-4 text-red-600 font-semibold">Rp {{ number_format($pengembalian->denda, 0, ',', '.') }}</td>
+                    @if($isTrash)
+                        <td class="py-3 px-4">{{ $pengembalian->deleted_at->format('d/m/Y H:i') }}</td>
+                    @endif
                     <td class="py-3 px-4">
                         <div class="flex items-center justify-center space-x-2">
-                        
-                            <!-- Tombol Edit -->
-                            <a href="{{ route('admin.pengembalian.edit', $pengembalian->id) }}" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
-                                Edit
-                            </a>
-
-                            <!-- Tombol Hapus -->
-                            <form action="{{ route('admin.pengembalian.destroy', $pengembalian->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
-                                    Hapus
-                                </button>
-                            </form>
+                            @if($isTrash)
+                                <form action="{{ route('admin.pengembalian.restore', $pengembalian->id) }}" method="POST" onsubmit="return confirm('Pulihkan data pengembalian ini?')">
+                                    @csrf
+                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                        Pulihkan
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('admin.pengembalian.edit', $pengembalian->id) }}" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                    Edit
+                                </a>
+                                <form action="{{ route('admin.pengembalian.destroy', $pengembalian->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                        Hapus
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </td>
                 </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="py-4 text-center text-gray-500">Belum ada data pengembalian.</td>
+                        <td colspan="{{ $isTrash ? 7 : 6 }}" class="py-4 text-center text-gray-500">
+                            {{ $isTrash ? 'Belum ada data pengembalian yang dihapus.' : 'Belum ada data pengembalian.' }}
+                        </td>
                     </tr>
                 @endforelse
             </tbody>

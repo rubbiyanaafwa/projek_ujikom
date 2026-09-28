@@ -458,8 +458,11 @@ class AdminController extends Controller
     public function indexPengembalian(Request $request)
     {
         $search = $request->input('search');
+        $isTrash = $request->boolean('trash');
 
-        $pengembalians = Pengembalian::with(['peminjaman.user', 'peminjaman.detailPinjam.alat'])
+        $query = $isTrash ? Pengembalian::onlyTrashed() : Pengembalian::query();
+
+        $pengembalians = $query->with(['peminjaman.user', 'peminjaman.detailPinjam.alat'])
             ->when($search, function ($query, $search) {
                 $query->whereHas('peminjaman.user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
@@ -469,7 +472,7 @@ class AdminController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.pengembalian.index', compact('pengembalians', 'search'));
+        return view('admin.pengembalian.index', compact('pengembalians', 'search', 'isTrash'));
     }
 
     // 2. Menampilkan Form Edit Pengembalian
@@ -503,5 +506,53 @@ class AdminController extends Controller
         $pengembalian->delete();
 
         return redirect()->route('admin.pengembalian.index')->with('success', 'Data pengembalian berhasil dihapus.');
+    }
+
+    public function restorePengembalian($id)
+    {
+        $restored = DB::transaction(function () use ($id) {
+            $pengembalian = Pengembalian::onlyTrashed()->lockForUpdate()->findOrFail($id);
+
+            if (Pengembalian::where('peminjaman_id', $pengembalian->peminjaman_id)->exists()) {
+                return 'duplicate';
+            }
+
+            $peminjaman = Peminjaman::with('detailPinjam')
+                ->lockForUpdate()
+                ->findOrFail($pengembalian->peminjaman_id);
+
+            if ($peminjaman->status === 'dipinjam') {
+                foreach ($peminjaman->detailPinjam as $detail) {
+                    Alat::whereKey($detail->alat_id)->lockForUpdate()->firstOrFail();
+                }
+
+                foreach ($peminjaman->detailPinjam as $detail) {
+                    Alat::whereKey($detail->alat_id)->increment('stok', $detail->jumlah);
+                }
+
+                $status = $pengembalian->tgl_kembali->gt($peminjaman->tgl_kembali_plan)
+                    ? 'telat'
+                    : 'dikembalikan';
+                $peminjaman->update(['status' => $status]);
+            } elseif (!in_array($peminjaman->status, ['dikembalikan', 'telat'], true)) {
+                return 'invalid_status';
+            }
+
+            $pengembalian->restore();
+
+            return 'restored';
+        });
+
+        if ($restored !== 'restored') {
+            $message = $restored === 'duplicate'
+                ? 'Peminjaman ini sudah memiliki data pengembalian aktif.'
+                : 'Status peminjaman sudah berubah, sehingga data tidak dapat dipulihkan.';
+
+            return redirect()->route('admin.pengembalian.index', ['trash' => 1])
+                ->with('error', $message);
+        }
+
+        return redirect()->route('admin.pengembalian.index', ['trash' => 1])
+            ->with('success', 'Data pengembalian berhasil dipulihkan.');
     }
 }
