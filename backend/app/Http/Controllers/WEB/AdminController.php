@@ -122,7 +122,9 @@ class AdminController extends Controller
     {
     $alat = Alat::findOrFail($id);
 
-    if ($alat->memilikiPeminjamanAktif()) {
+    if ($alat->detailPinjam()
+        ->whereHas('peminjaman', fn ($query) => $query->whereIn('status', ['diajukan', 'dipinjam', 'telat']))
+        ->exists()) {
         return redirect()->route('admin.alat.index')
             ->with('error', 'Alat tidak dapat dihapus karena masih terkait dengan peminjaman aktif.');
     }

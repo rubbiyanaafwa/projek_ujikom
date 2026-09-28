@@ -70,7 +70,9 @@ class AlatController extends Controller
 
     public function destroy(Alat $alat): JsonResponse
     {
-        if ($alat->memilikiPeminjamanAktif()) {
+        if ($alat->detailPinjam()
+            ->whereHas('peminjaman', fn ($query) => $query->whereIn('status', ['diajukan', 'dipinjam', 'telat']))
+            ->exists()) {
             return response()->json([
                 'message' => 'Alat tidak dapat dihapus karena masih terkait dengan peminjaman aktif.'
             ], 409);

@@ -25,11 +25,4 @@ class Alat extends Model
     public function detailPinjam(): HasMany {
         return $this->HasMany(DetailPinjam::class);
     }
-
-    public function memilikiPeminjamanAktif(): bool
-    {
-        return $this->detailPinjam()
-            ->whereHas('peminjaman', fn ($query) => $query->whereIn('status', ['diajukan', 'dipinjam', 'telat']))
-            ->exists();
-    }
 }
