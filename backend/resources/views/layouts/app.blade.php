@@ -78,7 +78,7 @@
                     @yield('header-title', 'Dashboard')
                 </div>
                 <div>
-                    <form action="{{ route('logout') }}" method="POST">
+                    <form id="logoutForm" action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition duration-200">
                             Logout
@@ -93,6 +93,62 @@
             </main>
         </div>
     </div>
+
+    <div id="logoutModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-gray-950/50 p-4" aria-hidden="true">
+        <section role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle" aria-describedby="logoutModalDescription" tabindex="-1" class="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
+            <h2 id="logoutModalTitle" class="text-lg font-bold text-gray-900">Konfirmasi Logout</h2>
+            <p id="logoutModalDescription" class="mt-2 text-sm leading-6 text-gray-600">Yakin ingin keluar dari akun ini?</p>
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button id="cancelLogout" type="button" class="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:min-w-24">
+                    Batal
+                </button>
+                <button id="confirmLogout" type="button" class="min-h-11 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 sm:min-w-24">
+                    Ya, Logout
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const logoutForm = document.getElementById('logoutForm');
+        const logoutModal = document.getElementById('logoutModal');
+        const cancelLogout = document.getElementById('cancelLogout');
+        const confirmLogout = document.getElementById('confirmLogout');
+        let previousBodyOverflow = '';
+
+        function closeLogoutModal() {
+            logoutModal.classList.add('hidden');
+            logoutModal.classList.remove('flex');
+            logoutModal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = previousBodyOverflow;
+            logoutForm.querySelector('button[type="submit"]').focus();
+        }
+
+        logoutForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            previousBodyOverflow = document.body.style.overflow;
+            logoutModal.classList.remove('hidden');
+            logoutModal.classList.add('flex');
+            logoutModal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            cancelLogout.focus();
+        });
+
+        cancelLogout.addEventListener('click', closeLogoutModal);
+        confirmLogout.addEventListener('click', () => logoutForm.submit());
+
+        logoutModal.addEventListener('click', (event) => {
+            if (event.target === logoutModal) {
+                closeLogoutModal();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !logoutModal.classList.contains('hidden')) {
+                closeLogoutModal();
+            }
+        });
+    </script>
 
 </body>
 </html>

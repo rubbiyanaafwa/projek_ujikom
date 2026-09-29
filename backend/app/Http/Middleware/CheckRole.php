@@ -14,6 +14,12 @@ class CheckRole
         if (!auth()->check() || !in_array(auth()->user()->role, $roles)) {
             abort(403, 'Unauthorized action');  
         }
-        return $next($request);
+
+        $response = $next($request);
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+
+        return $response;
     }
 }
