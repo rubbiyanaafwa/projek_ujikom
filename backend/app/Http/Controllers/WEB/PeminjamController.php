@@ -8,6 +8,7 @@ use App\Models\Peminjaman;
 use App\Models\DetailPinjam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PeminjamController extends Controller
 {
@@ -15,42 +16,59 @@ class PeminjamController extends Controller
     public function katalogAlat()
     {
         $alats = Alat::with('kategori')->where('stok', '>', 0)->get();
-        return view('peminjam.katalogAlat.katalog', compact('alats'));
+        return view('peminjam.katalog.index', compact('alats'));
     }
 
     public function ajukanPeminjaman(Request $request)
     {
-        $request->validate([
-            'tgl_kembali_plan' => 'required|date|after:today',
-            'alat_id' => 'required|array',
-            'jumlah' => 'required|array',
+        $validated = $request->validate([
+            'tgl_kembali_plan' => ['required', 'date', 'after:today'],
+            'alat_id' => ['required', 'array', 'min:1'],
+            'alat_id.*' => ['required', 'integer', 'distinct', 'exists:alat,id'],
+            'jumlah' => ['required', 'array'],
+            'jumlah.*' => ['required', 'integer', 'min:1'],
         ]);
 
-        DB::beginTransaction();
-        try {
-            // Buat header peminjaman
+        DB::transaction(function () use ($validated) {
+            $alats = Alat::query()
+                ->whereIn('id', $validated['alat_id'])
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
             $peminjaman = Peminjaman::create([
                 'user_id' => auth()->id(),
                 'tgl_pinjam' => now(),
-                'tgl_kembali_plan' => $request->tgl_kembali_plan,
+                'tgl_kembali_plan' => $validated['tgl_kembali_plan'],
                 'status' => 'diajukan',
             ]);
 
-            // Masukkan daftar alat yang dipinjam ke detail_pinjam
-            foreach ($request->alat_id as $index => $alatId) {
+            foreach ($validated['alat_id'] as $alatId) {
+                if (!array_key_exists($alatId, $validated['jumlah'])) {
+                    throw ValidationException::withMessages([
+                        'jumlah' => 'Jumlah setiap alat yang dipilih harus diisi.',
+                    ]);
+                }
+
+                $jumlah = (int) $validated['jumlah'][$alatId];
+                $alat = $alats->get($alatId);
+
+                if (!$alat || $alat->stok < $jumlah) {
+                    throw ValidationException::withMessages([
+                        'jumlah' => 'Jumlah alat melebihi stok yang tersedia.',
+                    ]);
+                }
+
                 DetailPinjam::create([
                     'peminjaman_id' => $peminjaman->id,
                     'alat_id' => $alatId,
-                    'jumlah' => $request->jumlah[$index],
+                    'jumlah' => $jumlah,
                 ]);
             }
+        });
 
-            DB::commit();
-            return redirect()->route('peminjam.riwayat')->with('success', 'Pengajuan peminjaman berhasil dikirim.');
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()->with('error', 'Gagal mengajukan peminjaman: ' . $e->getMessage());
-        }
+        return redirect()->route('peminjam.peminjaman.index')
+            ->with('success', 'Pengajuan peminjaman berhasil dikirim.');
     }
 
     // Melihat riwayat peminjaman user yang sedang login
@@ -61,6 +79,17 @@ class PeminjamController extends Controller
             ->latest()
             ->get();
 
-        return view('peminjam.riwayat', compact('peminjamans'));
+        return view('peminjam.peminjaman.index', compact('peminjamans'));
+    }
+
+    public function indexPengembalian()
+    {
+        $peminjamans = Peminjaman::with('detailPinjam.alat')
+            ->where('user_id', auth()->id())
+            ->whereIn('status', ['dipinjam', 'telat'])
+            ->latest()
+            ->get();
+
+        return view('peminjam.pengembalian.index', compact('peminjamans'));
     }
 }

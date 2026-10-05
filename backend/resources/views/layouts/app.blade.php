@@ -12,7 +12,7 @@
     <div class="flex h-screen overflow-hidden">
      <aside class="w-64 bg-gray-900 text-white flex flex-col md:flex">
         <div class="p-5 text-xl font-bold tracking-wider border-b border-gray-800">
-            PANEL ADMIN
+            PANEL {{ strtoupper(auth()->user()->role) }}
         </div>
             <nav class="flex-1 p-4 space-y-2">
                 <!-- MENU KHUSUS ADMIN -->
@@ -57,8 +57,11 @@
                     <a href="{{ route('peminjam.katalog') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.katalog') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
                         Katalog Alat
                     </a>
-                    <a href="{{ route('peminjam.riwayat') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.riwayat') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
-                        Riwayat Peminjaman
+                    <a href="{{ route('peminjam.peminjaman.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.peminjaman*') || request()->routeIs('peminjam.riwayat') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Peminjaman Saya
+                    </a>
+                    <a href="{{ route('peminjam.pengembalian.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.pengembalian*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Pengembalian Alat
                     </a>
                 @endif
             </nav>

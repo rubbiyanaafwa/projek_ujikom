@@ -76,6 +76,8 @@ Route::middleware(['auth', 'role:peminjam'])->prefix('peminjam')->name('peminjam
     // Katalog & Pengajuan
     Route::get('/katalog', [PeminjamController::class, 'katalogAlat'])->name('katalog');
     Route::post('/peminjaman/ajukan', [PeminjamController::class, 'ajukanPeminjaman'])->name('peminjaman.ajukan');
+    Route::get('/peminjaman', [PeminjamController::class, 'riwayatPeminjaman'])->name('peminjaman.index');
+    Route::get('/pengembalian', [PeminjamController::class, 'indexPengembalian'])->name('pengembalian.index');
     Route::get('/riwayat', [PeminjamController::class, 'riwayatPeminjaman'])->name('riwayat');
 });
 

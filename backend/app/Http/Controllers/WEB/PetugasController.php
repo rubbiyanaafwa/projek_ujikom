@@ -123,12 +123,14 @@ class PetugasController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($peminjamanId);
 
-            if ($peminjaman->status !== 'dipinjam') {
+            if (!in_array($peminjaman->status, ['dipinjam', 'telat'], true)) {
+                DB::rollBack();
                 return redirect()->back()
-                    ->with('error', 'Peminjaman belum berstatus dipinjam.');
+                    ->with('error', 'Peminjaman tidak sedang menunggu pengembalian.');
             }
 
             if (Pengembalian::where('peminjaman_id', $peminjaman->id)->exists()) {
+                DB::rollBack();
                 return redirect()->back()
                     ->with('error', 'Pengembalian sudah diproses.');
             }
