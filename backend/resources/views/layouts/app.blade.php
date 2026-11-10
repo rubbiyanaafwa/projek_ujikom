@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@yield('title', 'Dashboard Admin')</title>
+    <!-- Memuat Tailwind CSS melalui CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+    <aside class="w-64 bg-gray-900 text-white flex flex-col md:flex">
+        <div class="p-5 text-xl font-bold tracking-wider border-b border-gray-800">
+            PANEL {{ strtoupper(auth()->user()->role) }}
+        </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <!-- MENU KHUSUS ADMIN -->
+                @if(auth()->user()->role === 'admin')
+                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('admin.dashboard') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Dashboard
+                    </a>
+                    <a href="{{ route('admin.user.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('admin.user*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Kelola User
+                    </a>
+                    <a href="{{ route('admin.kategori.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('admin.kategori*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Kelola Kategori
+                    </a>
+                    <a href="{{ route('admin.alat.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('admin.alat*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Kelola Alat
+                    </a>
+                    <a href="{{ route('admin.peminjaman.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('admin.peminjaman*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Kelola Peminjaman
+                    </a>
+                    <a href="{{ route('admin.pengembalian.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('admin.pengembalian*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Kelola Pengembalian
+                    </a>
+                @endif
+
+                <!-- MENU KHUSUS PETUGAS -->
+                @if(auth()->user()->role === 'petugas')
+                    <a href="{{ route('petugas.peminjaman.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('petugas.peminjaman*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Persetujuan Peminjaman
+                    </a>
+
+                    <a href="{{ route('petugas.pengembalian.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('petugas.pengembalian*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Pemantauan Pengembalian
+                    </a>
+
+                    <a href="{{ route('petugas.laporan.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('petugas.laporan*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Cetak Laporan
+                    </a>
+                @endif
+
+                <!-- MENU KHUSUS PEMINJAM -->
+                @if(auth()->user()->role === 'peminjam')
+                    <a href="{{ route('peminjam.katalog') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.katalog') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Katalog Alat
+                    </a>
+                    <a href="{{ route('peminjam.peminjaman.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.peminjaman*') || request()->routeIs('peminjam.riwayat') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Peminjaman Saya
+                    </a>
+                    <a href="{{ route('peminjam.pengembalian.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.pengembalian*') ? 'bg-gray-800 text-white font-medium shadow' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        Pengembalian Alat
+                    </a>
+                @endif
+            </nav>
+
+             <!-- Info User Logged In -->
+        @if(auth()->user()->role === 'peminjam')
+        <div class="p-4 border-t border-gray-800 text-sm text-gray-400">
+            Logged in as: <span class="text-white font-semibold">
+                <a href="{{ route('peminjam.profil.edit', auth()->user()->id)}}" class="hover:underline">{{ auth()->user()->name }}</a>
+            </span>
+            <span class="block text-xs uppercase font-bold text-emerald-400">{{ auth()->user()->role }}</span>
+        </div>
+        @else
+        <div class="p-4 border-t border-gray-800 text-sm text-gray-400">
+            Logged in as: <span class="text-white font-semibold">{{ auth()->user()->name }}</span>
+            <span class="block text-xs uppercase font-bold text-emerald-400">{{ auth()->user()->role }}</span>
+        </div>
+        @endif
+
+    </aside>
+
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <div class="flex-1 flex flex-col overflow-y-auto">
+            <!-- NAVBAR ATAS -->
+            <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
+                <div class="text-xl font-bold tracking-wider text-gray-800">
+                    @yield('header-title', 'Dashboard')
+                </div>
+                <div>
+                    <form id="logoutForm" action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition duration-200">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <!-- KONTEN UTAMA HALAMAN -->
+            <main class="p-6">
+                @yield('content')
+            </main>
+        </div>
+    </div>
+
+    <div id="logoutModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-gray-950/50 p-4" aria-hidden="true">
+        <section role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle" aria-describedby="logoutModalDescription" tabindex="-1" class="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
+            <h2 id="logoutModalTitle" class="text-lg font-bold text-gray-900">Konfirmasi Logout</h2>
+            <p id="logoutModalDescription" class="mt-2 text-sm leading-6 text-gray-600">Yakin ingin keluar dari akun ini?</p>
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button id="cancelLogout" type="button" class="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:min-w-24">
+                    Batal
+                </button>
+                <button id="confirmLogout" type="button" class="min-h-11 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 sm:min-w-24">
+                    Ya, Logout
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const logoutForm = document.getElementById('logoutForm');
+        const logoutModal = document.getElementById('logoutModal');
+        const cancelLogout = document.getElementById('cancelLogout');
+        const confirmLogout = document.getElementById('confirmLogout');
+        let previousBodyOverflow = '';
+
+        function closeLogoutModal() {
+            logoutModal.classList.add('hidden');
+            logoutModal.classList.remove('flex');
+            logoutModal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = previousBodyOverflow;
+            logoutForm.querySelector('button[type="submit"]').focus();
+        }
+
+        logoutForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            previousBodyOverflow = document.body.style.overflow;
+            logoutModal.classList.remove('hidden');
+            logoutModal.classList.add('flex');
+            logoutModal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            cancelLogout.focus();
+        });
+
+        cancelLogout.addEventListener('click', closeLogoutModal);
+        confirmLogout.addEventListener('click', () => logoutForm.submit());
+
+        logoutModal.addEventListener('click', (event) => {
+            if (event.target === logoutModal) {
+                closeLogoutModal();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !logoutModal.classList.contains('hidden')) {
+                closeLogoutModal();
+            }
+        });
+    </script>
+
+</body>
+</html>
