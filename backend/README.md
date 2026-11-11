@@ -64,7 +64,13 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 2. cd nama-proyek
 3. cp .env.example .env 
 
-(catatan: untuk konfigurasi env bisa dilihat dari file docker-compose.yml, app_locale juga bisa diganti saja ke 'id')
+(catatan: untuk konfigurasi env bisa dilihat dari file docker-compose.yml, app_locale juga bisa diganti saja jadi 'id')
+
+## konfigurasi tools
+
+1. wsl --install (lakukan dicmd atau powershell'administrator' jika belum)
+2. konfigurasi docker dan aktifkan integrasi dengan distro ubuntu
+3. pastikan vscode sudah connect wsl distro:ubuntu
 
 ## konfigurasi awal di komputer baru
 
@@ -88,4 +94,4 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 2. docker compose up -d atau docker compose up -d --build
 3. docker exec -it laravel_api php artisan migrate:fresh --seed
 4. docker exec -it laravel-api php artisan key:generate
-    
+5. docker exec -it laravel-api php artisan storage:link
