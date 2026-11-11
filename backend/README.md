@@ -57,3 +57,35 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## clone projek dari github ke komputer baru/folder baru
+
+1. git clone https://github.com/username/repo-anda
+2. cd nama-proyek
+3. cp .env.example .env 
+
+(catatan: untuk konfigurasi env bisa dilihat dari file docker-compose.yml, app_locale juga bisa diganti saja ke 'id')
+
+## konfigurasi awal di komputer baru
+
+1. atur identitas global git
+    git config --global user.name "username github"
+    git config --global user.email "email@github.com"
+2. inisialisasi folder jadi repo git
+    git init
+3. proses persiapan push
+    git status
+    git add .
+    git commit -m "pesan bebas"
+4. menghubungkan folder lokal ke github
+    git remote add origin https://github.com/username/repo-anda
+5. push ke github
+    git push
+
+## menjalankan aplikasi
+
+1. composer install
+2. docker compose up -d atau docker compose up -d --build
+3. docker exec -it laravel_api php artisan migrate:fresh --seed
+4. docker exec -it laravel-api php artisan key:generate
+    

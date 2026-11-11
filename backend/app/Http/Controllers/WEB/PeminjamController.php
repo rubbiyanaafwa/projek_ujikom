@@ -122,19 +122,19 @@ class PeminjamController extends Controller
     {
         $user = User::findOrFail($id);
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'no_hp' => 'nullable|numeric|digits_between:13,15',
+            'no_hp' => ['nullable', 'string', 'regex:/^\+?[0-9]{8,15}$/'],
             'alamat' => 'nullable|string|max:225',
         ]);
 
-            $data = [
-            'no_hp' => $request->no_hp,
-            'alamat' => $request->alamat,
+        $data = [
+            'no_hp' => $validated['no_hp'] ?? null,
+            'alamat' => $validated['alamat'] ?? null,
         ];
 
         if ($request->filled('name')) {
-            $data['name'] = $request->name;
+            $data['name'] = $validated['name'];
         }
 
         $user->update($data);
